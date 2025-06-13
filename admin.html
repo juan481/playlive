@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PlayLive - Admin</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://web-broadcast.live-video.net/1.6.0/amazon-ivs-broadcast.min.js"></script>
+</head>
+<body>
+  <div id="admin-panel">
+    <h2>Panel de Administrador</h2>
+    <video id="broadcast" autoplay muted></video>
+    <button onclick="startBroadcast()">Iniciar Transmisión</button>
+    <button onclick="stopBroadcast()">Detener Transmisión</button>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
