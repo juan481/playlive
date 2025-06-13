@@ -5,6 +5,7 @@ const urlsToCache = [
   '/admin.html',
   '/styles.css',
   '/script.js',
+  '/icon.png',
   'https://player.live-video.net/1.20.0/amazon-ivs-player.min.js',
   'https://web-broadcast.live-video.net/1.6.0/amazon-ivs-broadcast.min.js'
 ];
