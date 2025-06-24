@@ -3,16 +3,94 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PlayLive - Admin</title>
+  <title>Panel de Admin - PlayLive</title>
   <link rel="stylesheet" href="styles.css">
-  <script src="https://web-broadcast.live-video.net/1.6.0/amazon-ivs-broadcast.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-auth-compat.js"></script>
 </head>
 <body>
-  <div id="admin-panel">
-    <h2>Panel de Administrador</h2>
-    <video id="broadcast" autoplay muted></video>
-    <button onclick="startBroadcast()">Iniciar Transmisión</button>
-    <button onclick="stopBroadcast()">Detener Transmisión</button>
+  <div id="admin-panel" class="screen">
+    <div class="md-top-app-bar">
+      <span class="md-top-app-bar-title">Panel de Admin</span>
+    </div>
+    <div class="admin-container">
+      <div class="admin-column">
+        <div class="md-card">
+          <h2 class="md-headline-medium">Control de Stream</h2>
+          <div class="md-container">
+            <label class="md-label">URL del Stream (OBS Ninja)</label>
+            <input type="url" id="stream-url" class="md-outlined-text-field" placeholder="https://obs.ninja/...">
+          </div>
+          <div class="button-group">
+            <button onclick="startStream()" class="md-filled-button">Iniciar Stream</button>
+            <button onclick="stopStream()" class="md-filled-button">Detener Stream</button>
+          </div>
+        </div>
+        <div class="md-card">
+          <h2 class="md-headline-medium">Próximo Evento</h2>
+          <div class="md-container">
+            <label class="md-label">Fecha y Hora</label>
+            <input type="datetime-local" id="next-event-time" class="md-outlined-text-field">
+          </div>
+          <button onclick="setNextEvent()" class="md-filled-button">Establecer Próximo Evento</button>
+        </div>
+        <div class="md-card">
+          <h2 class="md-headline-medium">Enviar Pregunta</h2>
+          <div class="md-container">
+            <label class="md-label">Pregunta</label>
+            <input type="text" id="question-input" class="md-outlined-text-field" placeholder="Escribe la pregunta">
+          </div>
+          <div class="md-container">
+            <label class="md-label">Respuesta 1</label>
+            <input type="text" id="answer1" class="md-outlined-text-field" placeholder="Respuesta 1">
+          </div>
+          <div class="md-container">
+            <label class="md-label">Respuesta 2</label>
+            <input type="text" id="answer2" class="md-outlined-text-field" placeholder="Respuesta 2">
+          </div>
+          <div class="md-container">
+            <label class="md-label">Respuesta 3</label>
+            <input type="text" id="answer3" class="md-outlined-text-field" placeholder="Respuesta 3">
+          </div>
+          <div class="md-container">
+            <label class="md-label">Respuesta 4</label>
+            <input type="text" id="answer4" class="md-outlined-text-field" placeholder="Respuesta 4">
+          </div>
+          <div class="md-container">
+            <label class="md-label">Respuesta Correcta</label>
+            <div class="radio-group">
+              <label class="md-radio">
+                <input type="radio" name="correct-answer" value="0" checked>
+                <span class="md-radio-label">Respuesta 1</span>
+              </label>
+              <label class="md-radio">
+                <input type="radio" name="correct-answer" value="1">
+                <span class="md-radio-label">Respuesta 2</span>
+              </label>
+              <label class="md-radio">
+                <input type="radio" name="correct-answer" value="2">
+                <span class="md-radio-label">Respuesta 3</span>
+              </label>
+              <label class="md-radio">
+                <input type="radio" name="correct-answer" value="3">
+                <span class="md-radio-label">Respuesta 4</span>
+              </label>
+            </div>
+          </div>
+          <button onclick="sendQuestion()" class="md-filled-button">Enviar Pregunta</button>
+        </div>
+      </div>
+      <div class="admin-column">
+        <div class="md-card">
+          <h2 class="md-headline-medium">Usuarios Conectados</h2>
+          <p id="connected-users" class="md-supporting-text">0 usuarios conectados</p>
+          <ul id="active-users"></ul>
+        </div>
+      </div>
+    </div>
   </div>
   <script src="script.js"></script>
 </body>

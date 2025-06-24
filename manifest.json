@@ -3,8 +3,8 @@
   "short_name": "PlayLive",
   "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "background_color": "#FEF7FF",
+  "theme_color": "#6750A4",
   "icons": [
     {
       "src": "icon.png",

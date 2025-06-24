@@ -3,16 +3,227 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PlayLive - Juego</title>
+  <title>PlayLive</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
-  <script src="https://player.live-video.net/1.20.0/amazon-ivs-player.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-auth-compat.js"></script>
 </head>
 <body>
-  <div id="game-screen">
-    <video id="player" controls autoplay></video>
-    <div id="waiting">Esperando el inicio del juego...</div>
+  <div id="login-screen" class="screen">
+    <div class="login-container">
+      <h1 class="md-headline-medium">Bienvenido a PlayLive</h1>
+      <button id="google-login" class="md-filled-button">
+        <img src="https://www.google.com/favicon.ico" alt="Google Icon" class="google-icon">
+        Iniciar sesión con Google
+      </button>
+    </div>
   </div>
+
+  <div id="main-screen" class="screen hidden">
+    <div id="tab-content">
+      <!-- Perfil -->
+      <div id="tab-profile" class="tab-pane hidden">
+        <div class="md-top-app-bar">
+          <span class="md-top-app-bar-title">Perfil</span>
+        </div>
+        <div class="profile-content">
+          <div class="profile-header">
+            <img id="profile-picture" src="https://via.placeholder.com/80" alt="Foto de perfil" class="profile-picture">
+            <h1 class="md-headline-small" id="profile-name">Hola, Juan!</h1>
+          </div>
+          <div class="md-container">
+            <label class="md-label">Nombre</label>
+            <input type="text" id="profile-display-name" class="md-outlined-text-field" disabled>
+          </div>
+          <div class="md-container">
+            <label class="md-label">Correo</label>
+            <input type="email" id="profile-email" class="md-outlined-text-field" disabled>
+          </div>
+          <div class="md-container">
+            <label class="md-label">CBU/CVU</label>
+            <input type="text" id="profile-cbu" class="md-outlined-text-field" placeholder="Ingresa tu CBU o CVU" disabled>
+          </div>
+          <div class="md-container">
+            <label class="md-label">WhatsApp</label>
+            <input type="tel" id="profile-whatsapp" class="md-outlined-text-field" placeholder="Ingresa tu número de WhatsApp" disabled>
+          </div>
+          <div class="md-container">
+            <label class="md-label">Bio</label>
+            <textarea id="profile-bio" class="md-outlined-text-field" placeholder="Cuéntanos sobre ti" disabled></textarea>
+          </div>
+          <button id="edit-profile" class="md-filled-button">Editar Perfil</button>
+          <button id="save-profile" class="md-filled-button hidden">Guardar Cambios</button>
+        </div>
+      </div>
+      <!-- Tienda -->
+      <div id="tab-shop" class="tab-pane hidden">
+        <div class="md-top-app-bar">
+          <span class="md-top-app-bar-title">Tienda</span>
+        </div>
+        <div class="shop-content">
+          <div class="shop-grid">
+            <div class="md-card shop-item">
+              <img src="https://via.placeholder.com/150" alt="Producto 1" class="shop-image">
+              <h3 class="md-headline-small">Camiseta PlayLive</h3>
+              <p class="md-supporting-text">$20.00</p>
+              <button class="md-filled-button">Añadir al carrito</button>
+            </div>
+            <div class="md-card shop-item">
+              <img src="https://via.placeholder.com/150" alt="Producto 2" class="shop-image">
+              <h3 class="md-headline-small">Gorra PlayLive</h3>
+              <p class="md-supporting-text">$15.00</p>
+              <button class="md-filled-button">Añadir al carrito</button>
+            </div>
+            <div class="md-card shop-item">
+              <img src="https://via.placeholder.com/150" alt="Producto 3" class="shop-image">
+              <h3 class="md-headline-small">Taza PlayLive</h3>
+              <p class="md-supporting-text">$10.00</p>
+              <button class="md-filled-button">Añadir al carrito</button>
+            </div>
+            <div class="md-card shop-item">
+              <img src="https://via.placeholder.com/150" alt="Producto 4" class="shop-image">
+              <h3 class="md-headline-small">Sticker PlayLive</h3>
+              <p class="md-supporting-text">$5.00</p>
+              <button class="md-filled-button">Añadir al carrito</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- VIVO -->
+      <div id="tab-live" class="tab-pane">
+        <div class="md-top-app-bar">
+          <span class="md-top-app-bar-title">VIVO</span>
+        </div>
+        <div id="player-container">
+          <iframe id="player" src="" frameborder="0" allowfullscreen></iframe>
+          <div id="next-event" class="md-card hidden">
+            <h2 class="md-headline-medium">Próximo evento</h2>
+            <p class="md-supporting-text" id="countdown"></p>
+          </div>
+          <div id="hearts-overlay">
+            <span class="heart">❤️</span>
+            <span class="heart-count">2</span>
+          </div>
+          <div id="chat-overlay"></div>
+          <div id="chat-input-container">
+            <div class="md-text-field">
+              <input type="text" id="chat-input" class="md-text-field-input" placeholder="Escribe un mensaje...">
+              <label class="md-text-field-label">Mensaje</label>
+              <button id="chat-send" class="md-icon-button">
+                <span class="material-symbols-outlined">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="question-overlay" class="hidden">
+          <div id="minimized-player"></div>
+          <div class="question-content">
+            <h2 id="question-text" class="md-headline-medium"></h2>
+            <div id="timer-container" class="hidden">
+              <svg class="timer-circle" viewBox="0 0 100 100">
+                <circle class="timer-bg" cx="50" cy="50" r="45"></circle>
+                <circle id="timer-progress" cx="50" cy="50" r="45"></circle>
+              </svg>
+              <span id="time-left">10</span>
+              <span class="clock-emoji">🕒</span>
+            </div>
+            <div id="answers"></div>
+            <div id="result-animation" class="hidden"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Estadísticas -->
+      <div id="tab-stats" class="tab-pane hidden">
+        <div class="md-top-app-bar">
+          <span class="md-top-app-bar-title">Estadísticas</span>
+        </div>
+        <div class="stats-content">
+          <div class="stats-grid">
+            <div class="md-card stats-card">
+              <h3 class="md-headline-medium">Participaciones</h3>
+              <h4 class="md-subhead">Total de juegos jugados</h4>
+              <p class="md-supporting-text">25</p>
+            </div>
+            <div class="md-card stats-card">
+              <h3 class="md-headline-medium">Ganadas</h3>
+              <h4 class="md-subhead">Victorias obtenidas</h4>
+              <p class="md-supporting-text">8</p>
+            </div>
+            <div class="md-card stats-card">
+              <h3 class="md-headline-medium">Ranking Actual</h3>
+              <h4 class="md-subhead">Posición en la tabla</h4>
+              <p class="md-supporting-text">#12</p>
+            </div>
+            <div class="md-card stats-card">
+              <h3 class="md-headline-medium">Puntos Totales</h3>
+              <h4 class="md-subhead">Puntuación acumulada</h4>
+              <p class="md-supporting-text">1,250</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Configuración -->
+      <div id="tab-settings" class="tab-pane hidden">
+        <div class="md-top-app-bar">
+          <span class="md-top-app-bar-title">Configuración</span>
+        </div>
+        <div class="settings-content">
+          <div class="md-list">
+            <div class="md-list-item">
+              <span class="md-list-headline">Notificaciones</span>
+              <label class="md-switch">
+                <input type="checkbox" id="notifications-toggle" checked>
+                <span class="md-slider"></span>
+              </label>
+            </div>
+            <div class="md-list-item">
+              <span class="md-list-headline">Mostrar chat en vivo</span>
+              <label class="md-switch">
+                <input type="checkbox" id="chat-toggle" checked>
+                <span class="md-slider"></span>
+              </label>
+            </div>
+            <div class="md-list-item">
+              <button id="logout-button" class="md-filled-button">Cerrar sesión</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <nav id="bottom-nav" class="md-navigation-bar">
+      <a href="#profile" class="md-navigation-tab" data-tab="tab-profile">
+        <span class="material-symbols-outlined md-icon">person_outline</span>
+        <span class="md-label">Perfil</span>
+      </a>
+      <a href="#shop" class="md-navigation-tab" data-tab="tab-shop">
+        <span class="material-symbols-outlined md-icon">storefront</span>
+        <span class="md-label">Tienda</span>
+      </a>
+      <a href="#live" class="md-navigation-tab active" data-tab="tab-live">
+        <span class="material-symbols-outlined md-icon">live_tv</span>
+        <span class="md-label">VIVO</span>
+      </a>
+      <a href="#stats" class="md-navigation-tab" data-tab="tab-stats">
+        <span class="material-symbols-outlined md-icon">bar_chart</span>
+        <span class="md-label">Estadísticas</span>
+      </a>
+      <a href="#settings" class="md-navigation-tab" data-tab="tab-settings">
+        <span class="material-symbols-outlined md-icon">settings</span>
+        <span class="md-label">Configuración</span>
+      </a>
+    </nav>
+  </div>
+
+  <script>
+    document.getElementById('question-overlay').classList.add('hidden');
+    document.getElementById('timer-container').classList.add('hidden');
+    console.log('Overlay y temporizador ocultos al cargar la página');
+  </script>
   <script src="script.js"></script>
 </body>
 </html>
