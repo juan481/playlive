@@ -14,37 +14,92 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
+// Ocultar splash screen al cargar
+window.addEventListener('load', () => {
+  const splash = document.getElementById('splash-screen');
+  if (splash) splash.style.display = 'none';
+});
+
 // Funciones globales para el panel de admin
 window.startStream = function () {
   const urlInput = document.getElementById('stream-url');
+  const errorMessage = document.getElementById('error-message');
   if (urlInput && urlInput.value.trim()) {
     db.collection('stream').doc('current').set({ url: urlInput.value.trim() })
-      .then(() => alert('Stream iniciado'))
-      .catch(error => alert('Error al iniciar stream: ' + error.message));
+      .then(() => {
+        console.log('Stream iniciado con URL:', urlInput.value.trim());
+        alert('Stream iniciado');
+        if (errorMessage) errorMessage.classList.add('hidden');
+      })
+      .catch(error => {
+        console.error('Error al iniciar stream:', error);
+        if (errorMessage) {
+          errorMessage.textContent = `Error al iniciar stream: ${error.message}`;
+          errorMessage.classList.remove('hidden');
+        } else {
+          alert('Error al iniciar stream: ' + error.message);
+        }
+      });
   } else {
-    alert('Ingresa una URL válida de OBS Ninja');
+    console.warn('URL de stream vacía');
+    if (errorMessage) {
+      errorMessage.textContent = 'Ingresa una URL válida de OBS Ninja';
+      errorMessage.classList.remove('hidden');
+    } else {
+      alert('Ingresa una URL válida de OBS Ninja');
+    }
   }
 };
 
 window.stopStream = function () {
+  const errorMessage = document.getElementById('error-message');
   db.collection('stream').doc('current').delete()
     .then(() => {
       db.collection('eventoActual').doc('current').update({ preguntaActiva: false })
         .catch(() => console.log('No había pregunta activa para desactivar'));
+      console.log('Stream detenido');
       alert('Stream detenido');
+      if (errorMessage) errorMessage.classList.add('hidden');
     })
-    .catch(error => alert('Error al detener stream: ' + error.message));
+    .catch(error => {
+      console.error('Error al detener stream:', error);
+      if (errorMessage) {
+        errorMessage.textContent = `Error al detener stream: ${error.message}`;
+        errorMessage.classList.remove('hidden');
+      } else {
+        alert('Error al detener stream: ' + error.message);
+      }
+    });
 };
 
 window.setNextEvent = function () {
   const nextEventTime = document.getElementById('next-event-time');
+  const errorMessage = document.getElementById('error-message');
   if (nextEventTime && nextEventTime.value) {
     const timestamp = new Date(nextEventTime.value).getTime();
     db.collection('stream').doc('next').set({ timestamp })
-      .then(() => alert('Próximo evento establecido'))
-      .catch(error => alert('Error al establecer próximo evento: ' + error.message));
+      .then(() => {
+        console.log('Próximo evento establecido:', timestamp);
+        alert('Próximo evento establecido');
+        if (errorMessage) errorMessage.classList.add('hidden');
+      })
+      .catch(error => {
+        console.error('Error al establecer próximo evento:', error);
+        if (errorMessage) {
+          errorMessage.textContent = `Error al establecer próximo evento: ${error.message}`;
+          errorMessage.classList.remove('hidden');
+        } else {
+          alert('Error al establecer próximo evento: ' + error.message);
+        }
+      });
   } else {
-    alert('Selecciona una fecha y hora válidas');
+    console.warn('Fecha/hora de próximo evento vacía');
+    if (errorMessage) {
+      errorMessage.textContent = 'Selecciona una fecha y hora válidas';
+      errorMessage.classList.remove('hidden');
+    } else {
+      alert('Selecciona una fecha y hora válidas');
+    }
   }
 };
 
@@ -55,9 +110,16 @@ window.sendQuestion = function () {
   const answer3 = document.getElementById('answer3');
   const answer4 = document.getElementById('answer4');
   const correctAnswer = document.querySelector('input[name="correct-answer"]:checked');
+  const errorMessage = document.getElementById('error-message');
 
   if (!questionInput || !answer1 || !answer2 || !answer3 || !answer4 || !correctAnswer) {
-    alert('Error: Faltan campos en el formulario');
+    console.error('Faltan elementos del formulario de pregunta');
+    if (errorMessage) {
+      errorMessage.textContent = 'Error: Faltan campos en el formulario';
+      errorMessage.classList.remove('hidden');
+    } else {
+      alert('Error: Faltan campos en el formulario');
+    }
     return;
   }
 
@@ -68,29 +130,49 @@ window.sendQuestion = function () {
     answer3.value.trim(),
     answer4.value.trim()
   ];
-  const correctAnswerIndex = parseInt(correctAnswer.value);
-  const start_time = Date.now();
-  const duration = 10000;
+  const correctAnswerIndex = parseInt(correctAnswer.value) || 0;
+  const start_time = firebase.firestore.Timestamp.now().toMillis();
+  const duration = 10000; // 10 segundos
 
   if (question && answers.every(ans => ans)) {
-    db.collection('eventoActual').doc('current').set({
+    const questionData = {
       preguntaActiva: true,
       question,
       answers,
       correctAnswer: correctAnswerIndex,
       start_time,
       duration
-    }).then(() => {
-      questionInput.value = '';
-      answer1.value = '';
-      answer2.value = '';
-      answer3.value = '';
-      answer4.value = '';
-      document.querySelector('input[name="correct-answer"][value="0"]').checked = true;
-      alert('Pregunta enviada');
-    }).catch(error => alert('Error al enviar pregunta: ' + error.message));
+    };
+    console.log('Enviando pregunta a Firestore:', questionData);
+    db.collection('eventoActual').doc('current').set(questionData)
+      .then(() => {
+        console.log('Pregunta enviada exitosamente');
+        questionInput.value = '';
+        answer1.value = '';
+        answer2.value = '';
+        answer3.value = '';
+        answer4.value = '';
+        document.querySelector('input[name="correct-answer"][value="0"]').checked = true;
+        alert('Pregunta enviada');
+        if (errorMessage) errorMessage.classList.add('hidden');
+      })
+      .catch(error => {
+        console.error('Error al enviar pregunta:', error);
+        if (errorMessage) {
+          errorMessage.textContent = `Error al enviar pregunta: ${error.message}`;
+          errorMessage.classList.remove('hidden');
+        } else {
+          alert('Error al enviar pregunta: ' + error.message);
+        }
+      });
   } else {
-    alert('Completa todos los campos de la pregunta');
+    console.warn('Campos de pregunta incompletos');
+    if (errorMessage) {
+      errorMessage.textContent = 'Completa todos los campos de la pregunta';
+      errorMessage.classList.remove('hidden');
+    } else {
+      alert('Completa todos los campos de la pregunta');
+    }
   }
 };
 
@@ -108,7 +190,7 @@ window.sendChatMessage = function () {
   }
   if (chatInput.value.trim()) {
     const message = chatInput.value.trim().substring(0, 100);
-    const timestamp = Date.now();
+    const timestamp = firebase.firestore.Timestamp.now().toMillis();
     const userId = auth.currentUser.uid;
     db.collection('chat').add({
       message,
@@ -116,9 +198,14 @@ window.sendChatMessage = function () {
       timestamp,
       displayName: auth.currentUser.displayName || 'Anónimo'
     }).then(() => {
+      console.log('Mensaje de chat enviado:', message);
       chatInput.value = '';
-    }).catch(error => alert('Error al enviar mensaje: ' + error.message));
+    }).catch(error => {
+      console.error('Error al enviar mensaje de chat:', error);
+      alert('Error al enviar mensaje: ' + error.message);
+    });
   } else {
+    console.warn('Mensaje de chat vacío');
     alert('Escribe un mensaje antes de enviar');
   }
 };
@@ -155,7 +242,10 @@ document.addEventListener('DOMContentLoaded', () => {
             switchTab('tab-live');
           }
         })
-        .catch(error => alert('Error al iniciar sesión: ' + error.message));
+        .catch(error => {
+          console.error('Error al iniciar sesión:', error);
+          alert('Error al iniciar sesión: ' + error.message);
+        });
     });
   }
 
@@ -164,7 +254,10 @@ document.addEventListener('DOMContentLoaded', () => {
     logoutButton.addEventListener('click', () => {
       auth.signOut()
         .then(() => console.log('Sesión cerrada'))
-        .catch(error => alert('Error al cerrar sesión: ' + error.message));
+        .catch(error => {
+          console.error('Error al cerrar sesión:', error);
+          alert('Error al cerrar sesión: ' + error.message);
+        });
     });
   }
 
@@ -195,9 +288,13 @@ document.addEventListener('DOMContentLoaded', () => {
             profileBio.disabled = true;
             editProfileButton.classList.remove('hidden');
             saveProfileButton.classList.add('hidden');
+            console.log('Perfil actualizado:', userData);
             alert('Perfil actualizado');
           })
-          .catch(error => alert('Error al actualizar perfil: ' + error.message));
+          .catch(error => {
+            console.error('Error al actualizar perfil:', error);
+            alert('Error al actualizar perfil: ' + error.message);
+          });
       }
     });
   }
@@ -231,7 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (profileDisplayName && profileEmail) {
         profileDisplayName.value = user.displayName || 'Anónimo';
         profileEmail.value = user.email || '';
-        // Cargar datos adicionales del perfil
         db.collection('users').doc(user.uid).onSnapshot(doc => {
           if (doc.exists) {
             const data = doc.data();
@@ -262,15 +358,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
       db.collection('users').doc(user.uid).onSnapshot(doc => {
         if (doc.exists && doc.data().banned) {
+          console.warn('Usuario expulsado:', user.uid);
           alert('Has sido expulsado del stream');
           auth.signOut();
         }
       });
+
+      // Inicializar panel de admin si está en admin.html
+      if (document.getElementById('admin-panel')) {
+        console.log('Inicializando panel de administración para usuario:', user.uid);
+        initAdminPanel();
+      }
     } else {
       console.log('No hay usuario logueado');
       if (loginScreen && mainScreen) {
         loginScreen.classList.remove('hidden');
         mainScreen.classList.add('hidden');
+      }
+      if (document.getElementById('admin-panel')) {
+        const errorMessage = document.getElementById('error-message');
+        if (errorMessage) {
+          errorMessage.textContent = 'Debes iniciar sesión para acceder al panel de administración';
+          errorMessage.classList.remove('hidden');
+        } else {
+          alert('Debes iniciar sesión para acceder al panel de administración');
+        }
+        window.location.href = 'index.html';
       }
     }
   });
@@ -281,17 +394,11 @@ document.addEventListener('DOMContentLoaded', () => {
     chatSendButton.addEventListener('click', sendChatMessage);
   }
 
-  if (mainScreen) {
-    initMainScreen();
-  }
-  if (document.getElementById('admin-panel')) {
-    initAdminPanel();
-  }
-
+  // Configurar navegación
   if (navItems) {
     navItems.forEach(item => {
       item.addEventListener('click', (e) => {
-        e.preventDefault();
+        e.preventDefault(); // Evitar comportamiento por defecto del enlace
         const tabId = item.getAttribute('data-tab');
         if (tabId) {
           switchTab(tabId);
@@ -300,6 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Configurar scroll para app-bar
   document.querySelectorAll('.tab-pane').forEach(pane => {
     pane.addEventListener('scroll', () => {
       const appBar = pane.querySelector('.md-top-app-bar');
@@ -308,6 +416,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  if (mainScreen) {
+    initMainScreen();
+  }
 });
 
 // Cambiar entre pestañas con animación
@@ -334,6 +446,7 @@ function switchTab(tabId) {
   }
 
   console.log('Pestaña activa:', tabId);
+  history.replaceState(null, '', window.location.pathname);
 }
 
 // Mostrar u ocultar chat según preferencia
@@ -360,10 +473,10 @@ function initMainScreen() {
 
   const nextEventCard = document.getElementById('next-event');
   const countdownEl = document.getElementById('countdown');
+  const player = document.getElementById('player');
+  const minimizedPlayer = document.getElementById('minimized-player');
 
   db.collection('stream').doc('current').onSnapshot(doc => {
-    const player = document.getElementById('player');
-    const minimizedPlayer = document.getElementById('minimized-player');
     if (player && minimizedPlayer && nextEventCard) {
       if (doc.exists && doc.data().url) {
         console.log('Stream activo:', doc.data().url);
@@ -382,7 +495,6 @@ function initMainScreen() {
     }
   });
 
-  // Temporizador para próximo evento
   db.collection('stream').doc('next').onSnapshot(doc => {
     if (doc.exists && doc.data().timestamp && countdownEl) {
       const updateCountdown = () => {
@@ -395,7 +507,7 @@ function initMainScreen() {
           const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
           countdownEl.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
         } else {
-          countdownEl.textContent = '¡Pronto anunciemos el próximo evento!';
+          countdownEl.textContent = '¡Pronto anunciaremos el próximo evento!';
           clearInterval(countdownInterval);
         }
       };
@@ -415,7 +527,7 @@ function initMainScreen() {
 
     if (doc.exists && doc.data()) {
       const data = doc.data();
-      console.log('Datos de eventoActual:', data);
+      console.log('Datos recibidos de eventoActual:', data);
 
       if (
         isStreamActive &&
@@ -423,13 +535,14 @@ function initMainScreen() {
         data.start_time &&
         data.duration &&
         data.question &&
-        Array.isArray(data.answers)
+        Array.isArray(data.answers) &&
+        data.correctAnswer !== undefined
       ) {
         const timeLeft = Math.max(0, Math.floor((data.start_time + data.duration - Date.now()) / 1000));
-        console.log('Tiempo restante:', timeLeft);
+        console.log('Tiempo restante para la pregunta:', timeLeft, 'segundos');
         if (timeLeft > 0) {
           showQuestion(data);
-          console.log('Overlay visible:', !overlay.classList.contains('hidden'));
+          console.log('Overlay debería ser visible:', !overlay.classList.contains('hidden'));
         } else {
           console.log('Pregunta expirada, desactivando...');
           db.collection('eventoActual').doc('current').update({ preguntaActiva: false })
@@ -437,14 +550,12 @@ function initMainScreen() {
           hideQuestion();
         }
       } else {
-        console.log('No hay pregunta activa, ocultando overlay');
+        console.log('Datos incompletos o pregunta no activa, ocultando overlay');
         hideQuestion();
-        console.log('Overlay oculto:', overlay.classList.contains('hidden'));
       }
     } else {
       console.log('No existe documento en eventoActual, ocultando overlay');
       hideQuestion();
-      console.log('Overlay oculto:', overlay.classList.contains('hidden'));
     }
   });
 
@@ -457,12 +568,12 @@ function initMainScreen() {
           const data = change.doc.data();
           console.log('Nuevo mensaje de chat:', data);
           while (chatOverlay.children.length >= 10) {
-            chatOverlay.removeChild(chatOverlay.children[0]); // Eliminar el más antiguo
+            chatOverlay.removeChild(chatOverlay.children[0]);
           }
           const messageEl = document.createElement('div');
           messageEl.className = 'chat-message';
           messageEl.textContent = `${data.displayName}: ${data.message}`;
-          chatOverlay.appendChild(messageEl); // Añadir al final
+          chatOverlay.appendChild(messageEl);
           setTimeout(() => messageEl.remove(), 5000);
         }
       });
@@ -480,14 +591,22 @@ function showQuestion(data) {
   const timerContainer = document.getElementById('timer-container');
 
   if (!overlay || !questionText || !answersDiv || !timerEl || !timerProgress || !resultAnimation || !timerContainer) {
-    console.error('Elementos del DOM no encontrados para mostrar pregunta');
+    console.error('Elementos del DOM no encontrados para mostrar pregunta:', {
+      overlay: !!overlay,
+      questionText: !!questionText,
+      answersDiv: !!answersDiv,
+      timerEl: !!timerEl,
+      timerProgress: !!timerProgress,
+      resultAnimation: !!resultAnimation,
+      timerContainer: !!timerContainer
+    });
     return;
   }
 
   console.log('Mostrando pregunta:', data);
   window.currentQuestion = data;
   overlay.classList.remove('hidden');
-  overlay.classList.add('slide-in');
+  overlay.classList.add('active');
   timerContainer.classList.remove('hidden');
   questionText.textContent = data.question;
   answersDiv.innerHTML = data.answers.map((ans, index) => `
@@ -500,40 +619,40 @@ function showQuestion(data) {
   timerProgress.style.strokeDashoffset = 283 - (283 * (data.duration / 1000 - timeLeft) / (data.duration / 1000));
   timerProgress.style.animation = `timer ${timeLeft}s linear forwards`;
 
+  let userHasAnswered = false;
   const timer = setInterval(() => {
     timeLeft--;
     timerEl.textContent = timeLeft;
     if (timeLeft <= 0) {
       clearInterval(timer);
-      lockAnswers();
-      console.log('Tiempo agotado, desactivando pregunta');
-      db.collection('eventoActual').doc('current').update({ preguntaActiva: false })
-        .catch(error => console.error('Error al desactivar pregunta:', error));
-      setTimeout(() => hideQuestion(), 3000);
+      if (!userHasAnswered) {
+        lockAnswers();
+        resultAnimation.textContent = '⏰ Tiempo agotado';
+        resultAnimation.classList.remove('hidden');
+      }
+      setTimeout(() => {
+        db.collection('eventoActual').doc('current').update({ preguntaActiva: false })
+          .catch(error => console.error('Error al desactivar pregunta:', error));
+        hideQuestion();
+      }, 2000);
     }
   }, 1000);
 
   const answerButtons = answersDiv.querySelectorAll('.answer-btn');
   answerButtons.forEach(button => {
     button.addEventListener('click', () => {
-      if (window.currentQuestion) {
+      if (window.currentQuestion && !userHasAnswered && auth.currentUser) {
+        userHasAnswered = true;
         lockAnswers();
         const selectedIndex = parseInt(button.dataset.index);
+        button.classList.add('selected');
         if (selectedIndex === window.currentQuestion.correctAnswer) {
-          button.classList.add('correct');
           resultAnimation.textContent = '✅ Correcto';
           resultAnimation.classList.remove('hidden');
         } else {
-          button.classList.add('incorrect');
-          answerButtons[window.currentQuestion.correctAnswer].classList.add('correct');
           resultAnimation.textContent = '❌ Incorrecto';
           resultAnimation.classList.remove('hidden');
         }
-        clearInterval(timer);
-        console.log('Respuesta seleccionada, desactivando pregunta');
-        db.collection('eventoActual').doc('current').update({ preguntaActiva: false })
-          .catch(error => console.error('Error al desactivar pregunta:', error));
-        setTimeout(() => hideQuestion(), 3000);
       }
     }, { once: true });
   });
@@ -541,7 +660,10 @@ function showQuestion(data) {
 
 function lockAnswers() {
   const answerButtons = document.querySelectorAll('.answer-btn');
-  answerButtons.forEach(button => button.disabled = true);
+  answerButtons.forEach(button => {
+    button.disabled = true;
+    button.style.pointerEvents = 'none';
+  });
 }
 
 function hideQuestion() {
@@ -553,13 +675,16 @@ function hideQuestion() {
 
   if (overlay && resultAnimation && timerProgress && timerContainer && timeLeft) {
     console.log('Ocultando pregunta y temporizador');
-    overlay.classList.add('hidden');
-    overlay.classList.remove('slide-in', 'fade-out');
-    resultAnimation.classList.add('hidden');
-    timerProgress.style.animation = 'none';
-    timerContainer.classList.add('hidden');
-    timeLeft.textContent = '10';
-    window.currentQuestion = null;
+    overlay.classList.add('fade-out');
+    setTimeout(() => {
+      overlay.classList.add('hidden');
+      overlay.classList.remove('active', 'fade-out');
+      resultAnimation.classList.add('hidden');
+      timerProgress.style.animation = 'none';
+      timerContainer.classList.add('hidden');
+      timeLeft.textContent = '10';
+      window.currentQuestion = null;
+    }, 500);
   } else {
     console.warn('Elementos del DOM no encontrados al ocultar pregunta');
   }
@@ -582,8 +707,9 @@ function initAdminPanel() {
         const data = doc.data();
         if (!data.banned && (Date.now() - data.lastActive) < 60000) {
           const li = document.createElement('li');
+          li.className = 'md-list-item';
           li.innerHTML = `
-            ${data.displayName}
+            <span class="md-list-headline">${data.displayName}</span>
             <button class="md-filled-button btn-ban" onclick="banUser('${doc.id}')">Expulsar</button>
           `;
           activeUsers.appendChild(li);
@@ -594,12 +720,23 @@ function initAdminPanel() {
 }
 
 window.banUser = function (userId) {
+  const errorMessage = document.getElementById('error-message');
   if (userId) {
     db.collection('users').doc(userId).set({ banned: true }, { merge: true })
       .then(() => {
         db.collection('connectedUsers').doc(userId).delete();
+        console.log('Usuario expulsado:', userId);
         alert('Usuario expulsado');
+        if (errorMessage) errorMessage.classList.add('hidden');
       })
-      .catch(error => alert('Error al expulsar usuario: ' + error.message));
+      .catch(error => {
+        console.error('Error al expulsar usuario:', error);
+        if (errorMessage) {
+          errorMessage.textContent = `Error al expulsar usuario: ${error.message}`;
+          errorMessage.classList.remove('hidden');
+        } else {
+          alert('Error al expulsar usuario: ' + error.message);
+        }
+      });
   }
 };
